@@ -1,7 +1,7 @@
 #ifndef SPARSE_KERNEL_SAMPLING_MNIST_H
 #define SPARSE_KERNEL_SAMPLING_MNIST_H
 
-#include "Data.h"
+#include "Data.hpp"
 #include <fstream>
 
 class MNIST : public Data {
@@ -11,7 +11,8 @@ public:
     virtual uint64_t num_items (void) {
         return num_items_;
     }
-    virtual float distance (uint64_t i, uint64_t j);
+protected:
+    virtual float kernel_distance (uint64_t i, uint64_t j);
 private:
     float two_sigma_squared_;
     typedef struct header {

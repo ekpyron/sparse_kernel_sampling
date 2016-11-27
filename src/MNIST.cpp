@@ -1,4 +1,4 @@
-#include "MNIST.h"
+#include "MNIST.hpp"
 #include <stdexcept>
 #include <memory>
 #include <cmath>
@@ -8,7 +8,7 @@ inline uint32_t byteswap32(uint32_t v) {
 }
 
 MNIST::MNIST(int argc, char **argv) : train_images_ ("train-images-idx3-ubyte", std::ios_base::in|std::ios_base::binary),
-                                      two_sigma_squared_ (2.0) {
+                                      two_sigma_squared_ (256.0) {
     if (!train_images_.is_open())
         throw std::runtime_error("Cannot open MNIST training image file.");
 
