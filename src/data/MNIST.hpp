@@ -6,7 +6,7 @@
 
 class MNIST : public Data {
 public:
-    MNIST(int argc, char **argv);
+    MNIST(void);
     virtual ~MNIST(void);
     virtual uint64_t num_items (void) const {
         return num_items_;

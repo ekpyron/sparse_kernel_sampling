@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <eigen3/Eigen/Eigen>
-#include <numeric>
 
 class Data {
 public:

@@ -6,12 +6,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iostream>
+#include <utility/Arguments.hpp>
 
 inline uint32_t byteswap32(uint32_t v) {
     return ((v&0xFF)<<24)|(((v>>8)&0xFF)<<16)|(((v>>16)&0xFF)<<8)|((v>>24)&0xFF);
 }
 
-MNIST::MNIST(int argc, char **argv) : two_sigma_squared_ (392.0) {
+MNIST::MNIST(void) : two_sigma_squared_ (392.0) {
     struct stat sb;
     fd = open("train-images-idx3-ubyte", O_RDONLY);
     if (fd == -1) {

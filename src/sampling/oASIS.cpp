@@ -4,75 +4,86 @@
 #include <iostream>
 #include <chrono>
 #include "Nystrom.hpp"
+#include <utility/Arguments.hpp>
 
 oASIS::oASIS(const Data *data, const uint64_t init_cols, const uint64_t max_cols, const float err_tolerance)
     : Winv_max_(max_cols, max_cols), Ctransp_max_ (max_cols, data->num_items ()), k_ (init_cols)
 {
+    bool verbose = Arguments::get().verbose();
+
     uint64_t nitems = data->num_items();
 
     {
         Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> R_max (max_cols, nitems);
         Eigen::RowVectorXf Delta(nitems), d(nitems);
 
-        std::cout << "Fetching diagonal..." << std::endl;
         std::vector<bool> sampled(nitems, false);
-        d = data->diagonal();
-        std::cout << "DONE." << std::endl;
-
-        std::cout << "Choose initial " << k_ << " columns..." << std::endl;
-        std::vector<uint64_t> Lambda;
-        std::random_device random_device;
-        std::mt19937 rnd(random_device());
-        for (uint64_t i = 0; i < k_; i++) {
-            uint64_t col = std::uniform_int_distribution<uint64_t> (0, nitems - k_) (rnd) + i;
-            Lambda.push_back(col);
-            sampled[col] = true;
-
+        {
+            RuntimeMonitorScope scope(runtime_, "Fetch diagonal");
+            d = data->diagonal();
         }
-        std::cout << "DONE." << std::endl;
+
+        std::vector<uint64_t> Lambda;
+        {
+            RuntimeMonitorScope scope(runtime_, "Choose initial ", k_, "columns...");
+            std::random_device random_device;
+            std::mt19937 rnd(random_device());
+            for (uint64_t i = 0; i < k_; i++) {
+                uint64_t col = std::uniform_int_distribution<uint64_t> (0, nitems - k_) (rnd) + i;
+                Lambda.push_back(col);
+                sampled[col] = true;
+
+            }
+        }
 
 
         {
-            std::cout << "Computing C_k^T..." << std::endl;
-            uint64_t j = 0;
-            for (auto it = Lambda.begin (); it != Lambda.end(); it++) {
-                Ctransp_max_.row(j++) = data->column(*it);
+            {
+                RuntimeMonitorScope scope(runtime_, "Compute C_k^T");
+                uint64_t j = 0;
+                for (auto it = Lambda.begin (); it != Lambda.end(); it++) {
+                    Ctransp_max_.row(j++) = data->column(*it);
+                }
             }
-            std::cout << "DONE" << std::endl;
 
-            std::cout << "Fetching W..." << std::endl;
             Eigen::MatrixXf W (k_, k_);
             auto const& Ctransp = Ctransp_max_.topRows(k_);
             {
-                uint64_t i = 0;
-                for (auto it = Lambda.begin (); it != Lambda.end(); it++) {
-                    W.row(i) = Ctransp.col(*it);
-                    i++;
+                RuntimeMonitorScope scope(runtime_, "Fetch W");
+                {
+                    uint64_t i = 0;
+                    for (auto it = Lambda.begin (); it != Lambda.end(); it++) {
+                        W.row(i) = Ctransp.col(*it);
+                        i++;
+                    }
                 }
             }
-            std::cout << "DONE" << std::endl;
 
-            std::cout << "Computing SVD of W..." << std::endl;
-            auto SVD = Eigen::JacobiSVD<Eigen::MatrixXf> (W, Eigen::ComputeThinU|Eigen::ComputeThinV);
+            Eigen::JacobiSVD<Eigen::MatrixXf> SVD;
+            {
+                RuntimeMonitorScope scope(runtime_, "Compute SVD of W");
+                SVD = W.jacobiSvd(Eigen::ComputeThinU|Eigen::ComputeThinV);
+            }
 
-            std::cout << "DONE" << std::endl;
+            Eigen::MatrixXf Winv;
+            {
+                RuntimeMonitorScope scope(runtime_, "Compute W^{-1}");
+                Winv = SVD.matrixV() * (SVD.singularValues()
+                        .unaryExpr([](float v)->float { return (v==0.0f)?0.0f:(1.0f/v); })
+                        .asDiagonal()) * SVD.matrixU().transpose();
+                Winv_max_.topLeftCorner (k_, k_) = Winv;
+            }
 
-            std::cout << "Computing W^{-1}..." << std::endl;
-            auto Winv = SVD.matrixV() * (SVD.singularValues()
-                    .unaryExpr([](float v)->float { return (v==0.0f)?0.0f:(1.0f/v); })
-                    .asDiagonal()) * SVD.matrixU().transpose();
-            Winv_max_.topLeftCorner (k_, k_) = Winv;
-            std::cout << "DONE" << std::endl;
 
-            std::cout << "Computing R..." << std::endl;
-            R_max.topRows (k_) = Winv * Ctransp;
-            std::cout << "DONE" << std::endl;
+            {
+                RuntimeMonitorScope scope(runtime_, "Compute R");
+                R_max.topRows (k_) = Winv * Ctransp;
+            }
 
         }
 
-        std::cout << "Running oASIS..." << std::endl;
         {
-            RuntimeMonitorScope runtimeScope (runtime_);
+            RuntimeMonitorScope runtimeScope (runtime_, "Run oASIS");
             while (k_ < max_cols) {
                 auto const& Ctransp = Ctransp_max_.topRows (k_);
                 auto const& Winv = Winv_max_.topLeftCorner (k_, k_);
@@ -114,24 +125,19 @@ oASIS::oASIS(const Data *data, const uint64_t init_cols, const uint64_t max_cols
                 sampled[i] = true;
             }
         }
-        std::cout << "DONE." << std::endl;
-        std::cout << "Runtime: " << runtime_.get().count() << " s" << std::endl;
     }
 }
 
 oASIS::~oASIS(void) {
 }
 
-void oASIS::CheckResult(const Data* data) const {
+float oASIS::GetError(const Data* data) const {
     if (data->G().cols() != 0) {
-        std::cout << "Check result..." << std::endl;
         auto const& Ctransp = Ctransp_max_.topRows (k_);
         auto const& Winv = Winv_max_.topLeftCorner (k_, k_);
         Eigen::MatrixXf Gtilde = Ctransp.transpose () * Winv * Ctransp;
-        std::cout << "Gtilde(" << Gtilde.rows() << ", " << Gtilde.cols () << ")" << std::endl;
-
-        std::cout << "Error: " << (data->G()-Gtilde).norm() / (data->G().norm()) << std::endl;
-        std::cout << "DONE." << std::endl;
+        return (data->G()-Gtilde).norm() / (data->G().norm());
     } else {
+        return -1.0f;
     }
 }

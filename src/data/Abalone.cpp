@@ -5,9 +5,11 @@
 #include <vector>
 #include <eigen3/Eigen/Eigen>
 #include <cmath>
+#include <utility/Arguments.hpp>
 
-Abalone::Abalone (int argc, char **argv) {
-    std::cout << "Read abalone data..." << std::endl;
+Abalone::Abalone (void) {
+    bool verbose = Arguments::get().verbose();
+    if (verbose) std::cout << "  Read abalone data..." << std::endl;
     std::ifstream f ("abalone.data", std::ios_base::in);
     if (!f.is_open ()) throw std::runtime_error("Cannot open abalone dataset.");
     std::string line;
@@ -18,8 +20,8 @@ Abalone::Abalone (int argc, char **argv) {
         std::sscanf(line.c_str(), "%c %f %f %f %f %f %f %f %f", &c, &data.back()(0), &data.back()(1), &data.back()(2),
                     &data.back()(3), &data.back()(4), &data.back()(5), &data.back()(6), &data.back()(7));
     }
-    std::cout << "DONE." << std::endl;
-    std::cout << "Compute Gram Matrix..." << std::endl;
+    if (verbose) std::cout << "  DONE." << std::endl;
+    if (verbose) std::cout << "  Compute Gram Matrix..." << std::endl;
     G_.resize (data.size(), data.size());
 
     float max_dist = 0.0f;
@@ -37,7 +39,7 @@ Abalone::Abalone (int argc, char **argv) {
             G_(i,j) = std::exp(-dist / two_sigma_squared);
         }
     }
-    std::cout << "DONE." << std::endl;
+    if (verbose) std::cout << "  DONE." << std::endl;
 }
 
 Abalone::~Abalone (void) {

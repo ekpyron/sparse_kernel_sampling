@@ -7,7 +7,7 @@
 
 class TwoMoons : public Data {
 public:
-    TwoMoons(int argc, char **argv);
+    TwoMoons(void);
     virtual ~TwoMoons(void);
     virtual uint64_t num_items (void) const {
         return G_.cols();

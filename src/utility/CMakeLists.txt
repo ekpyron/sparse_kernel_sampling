@@ -1,0 +1,3 @@
+set(SPARSE_KERNEL_SAMPLING_UTILITY_SOURCES RuntimeMonitor.cpp RuntimeMonitor.hpp Arguments.cpp Arguments.hpp)
+
+add_library(sparse_kernel_sampling_utility STATIC ${SPARSE_KERNEL_SAMPLING_UTILITY_SOURCES})

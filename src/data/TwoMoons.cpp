@@ -4,9 +4,12 @@
 #include <eigen3/Eigen/Eigen>
 #include <vector>
 #include <cmath>
+#include <utility/Arguments.hpp>
 
-TwoMoons::TwoMoons(int argc, char **argv) {
-    std::cout << "Read two moon data..." << std::endl;
+TwoMoons::TwoMoons(void) {
+    bool verbose = Arguments::get().verbose();
+
+    if (verbose) std::cout << "  Read two moon data..." << std::endl;
     std::ifstream f ("two_moons", std::ios_base::in);
     if (!f.is_open ()) throw std::runtime_error("Cannot open two moon dataset.");
     std::string line;
@@ -17,8 +20,8 @@ TwoMoons::TwoMoons(int argc, char **argv) {
         std::sscanf(line.c_str(), "%f %f", &f[0], &f[1]);
         data.emplace_back(f[0], f[1]);
     }
-    std::cout << "DONE." << std::endl;
-    std::cout << "Compute Gram Matrix..." << std::endl;
+    if (verbose) std::cout << "  DONE." << std::endl;
+    if (verbose) std::cout << "  Compute Gram Matrix..." << std::endl;
     G_.resize(data.size(), data.size());
 
     float max_dist = 0.0f;
@@ -36,7 +39,7 @@ TwoMoons::TwoMoons(int argc, char **argv) {
         }
     }
     G_ += 0.0001f * Eigen::MatrixXf::Identity(G_.rows(), G_.cols());
-    std::cout << "DONE." << std::endl;
+    if (verbose) std::cout << "  DONE." << std::endl;
 }
 
 TwoMoons::~TwoMoons(void) {

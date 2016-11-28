@@ -1,7 +1,8 @@
 #ifndef SPARSE_KERNEL_SAMPLING_NYSTROM_HPP
 #define SPARSE_KERNEL_SAMPLING_NYSTROM_HPP
 
-#include "data/Data.hpp"
+#include <data/Data.hpp>
+#include <utility/RuntimeMonitor.hpp>
 #include <eigen3/Eigen/Eigen>
 
 class Nystrom {
@@ -17,11 +18,15 @@ public:
     const std::vector<uint64_t> &Lambda(void) const {
         return Lambda_;
     }
-    void CheckResult (const Data *data);
+    float GetError (const Data *data);
+    float GetRuntime (void) {
+        return runtime_.get().count();
+    }
 private:
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Ctransp_;
     Eigen::MatrixXf Winv_;
     std::vector<uint64_t> Lambda_;
+    RuntimeMonitor runtime_;
 };
 
 #endif /* !defined SPARSE_KERNEL_SAMPLING_NYSTROM_HPP */

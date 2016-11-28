@@ -7,7 +7,7 @@
 
 class Abalone : public Data {
 public:
-    Abalone (int argc, char **argv);
+    Abalone (void);
     virtual ~Abalone (void);
     virtual uint64_t num_items (void) const {
         return G_.cols();

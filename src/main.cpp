@@ -2,33 +2,46 @@
 #include <cstdlib>
 #include <exception>
 #include <memory>
-#include "data/Abalone.hpp"
-#include "data/MNIST.hpp"
-#include "data/TwoMoons.hpp"
-#include "oASIS.h"
-#include "Nystrom.hpp"
+#include <data/Data.hpp>
+#include <data/Abalone.hpp>
+#include <data/MNIST.hpp>
+#include <data/TwoMoons.hpp>
+#include <sampling/oASIS.h>
+#include <sampling/Nystrom.hpp>
+#include <utility/Arguments.hpp>
 
 int main(int argc, char *argv[]) {
     try {
-        std::unique_ptr<Data> data;
-        std::string dataset(argc > 1 ? argv[1] : "TwoMoons");
-        if (!dataset.compare("TwoMoons")) {
-            data = std::unique_ptr<Data> (new TwoMoons (argc, argv));
-        } else if (!dataset.compare("Abalone")) {
-            data = std::unique_ptr<Data> (new Abalone (argc, argv));
-        } else if (!dataset.compare("MNIST")) {
-            data = std::unique_ptr<Data> (new MNIST (argc, argv));
+        if (!Arguments::get().parse(argc, argv)) {
+            return EXIT_SUCCESS;
         }
 
-        std::cout << "oASIS:" << std::endl;
+        std::unique_ptr<Data> data;
+
+        std::cout << "Fetch input data..." << std::endl;
+        switch (Arguments::get().input_data_type()) {
+            case InputDataType::TwoMoons:
+                data = std::unique_ptr<Data> (new TwoMoons ());
+                break;
+            case InputDataType::Abalone:
+                data = std::unique_ptr<Data> (new Abalone ());
+                break;
+            case InputDataType::MNIST:
+                data = std::unique_ptr<Data> (new MNIST ());
+                break;
+        }
+        std::cout << "DONE." << std::endl;
+
+        std::cout << "Running oASIS..." << std::endl;
         oASIS oasis (data.get());
-        std::cout << std::endl << "Nystrom:" << std::endl;
+        std::cout << "DONE." << std::endl;
+        std::cout << "Running Nystrom..." << std::endl;
         Nystrom nystrom (data.get(), 200);
-        std::cout << std::endl << "Results:" << std::endl;
-        std::cout << "oASIS:" << std::endl;
-        oasis.CheckResult(data.get());
-        std::cout << std::endl << "Nystrom:" << std::endl;
-        nystrom.CheckResult(data.get());
+        std::cout << "DONE." << std::endl;
+        std::cout << "oASIS Runtime: " << oasis.GetRuntime() << " s" << std::endl;
+        std::cout << "oASIS Error: " << oasis.GetError(data.get()) << std::endl;
+        std::cout << "Nystrom Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
+        std::cout << "Nystrom Error: " << nystrom.GetError(data.get()) << std::endl;
 
         return EXIT_SUCCESS;
     } catch (const std::exception &e) {
