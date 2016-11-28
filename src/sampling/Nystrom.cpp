@@ -50,12 +50,13 @@ Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, con
     }
 
     int small_singular_values = 0;
+    float_type cutoff = float_type(1e2)*std::numeric_limits<float_type>::epsilon();
     {
         RuntimeMonitorScope scope (*runtime_, "Compute W^{-1} (", SVD.nonzeroSingularValues(), ")");
         auto singValInv = SVD.singularValues();
         for (auto i = 0; i < singValInv.rows(); i++) {
             float_type &v = singValInv(i);
-            if (my_abs(v)<=float_type(1e-10)) {
+            if (my_abs(v)<=cutoff) {
                 small_singular_values++;
                 v = float_type(0.0);
             } else {
@@ -65,7 +66,7 @@ Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, con
         Winv_ = SVD.matrixV() * (singValInv.asDiagonal()) * SVD.matrixU().transpose();
     }
     if (small_singular_values && Arguments::get().verbose()) {
-        std::cout << "  (" << small_singular_values << " singular values < 1e-10 were cut off)" << std::endl;
+        std::cout << "  (" << small_singular_values << " singular values < " << cutoff << " were cut off)" << std::endl;
     }
 }
 
