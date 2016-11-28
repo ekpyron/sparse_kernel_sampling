@@ -6,10 +6,15 @@
 #include "Nystrom.hpp"
 #include <utility/Arguments.hpp>
 
-oASIS::oASIS(const Data *data, const uint64_t init_cols, const uint64_t max_cols, const float err_tolerance)
-    : Winv_max_(max_cols, max_cols), Ctransp_max_ (max_cols, data->num_items ()), k_ (init_cols)
+oASIS::oASIS(const Data *data, const std::shared_ptr<RuntimeMonitor> &runtime)
+    : runtime_(runtime)
 {
-    bool verbose = Arguments::get().verbose();
+    const uint64_t init_cols = 10;
+    const uint64_t max_cols = 200;
+    const float err_tolerance = std::numeric_limits<float>::epsilon();
+    Winv_max_ = Eigen::MatrixXf (max_cols, max_cols);
+    Ctransp_max_ = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> (max_cols, data->num_items ());
+    k_ = init_cols;
 
     uint64_t nitems = data->num_items();
 
@@ -18,72 +23,29 @@ oASIS::oASIS(const Data *data, const uint64_t init_cols, const uint64_t max_cols
         Eigen::RowVectorXf Delta(nitems), d(nitems);
 
         std::vector<bool> sampled(nitems, false);
+
         {
-            RuntimeMonitorScope scope(runtime_, "Fetch diagonal");
+            Nystrom nystrom (data, k_, runtime_);
+
+            Ctransp_max_.topRows(k_) = nystrom.Ctransp();
+            Winv_max_.topLeftCorner (k_, k_) = nystrom.Winv();
+            for (auto &col : nystrom.Lambda()) {
+                sampled[col] = true;
+            }
+
+            {
+                RuntimeMonitorScope scope(*runtime_, "Compute R");
+                R_max.topRows (k_) = nystrom.Winv() * nystrom.Ctransp();
+            }
+        }
+
+        {
+            RuntimeMonitorScope scope(*runtime_, "Fetch diagonal");
             d = data->diagonal();
         }
 
-        std::vector<uint64_t> Lambda;
         {
-            RuntimeMonitorScope scope(runtime_, "Choose initial ", k_, "columns...");
-            std::random_device random_device;
-            std::mt19937 rnd(random_device());
-            for (uint64_t i = 0; i < k_; i++) {
-                uint64_t col = std::uniform_int_distribution<uint64_t> (0, nitems - k_) (rnd) + i;
-                Lambda.push_back(col);
-                sampled[col] = true;
-
-            }
-        }
-
-
-        {
-            {
-                RuntimeMonitorScope scope(runtime_, "Compute C_k^T");
-                uint64_t j = 0;
-                for (auto it = Lambda.begin (); it != Lambda.end(); it++) {
-                    Ctransp_max_.row(j++) = data->column(*it);
-                }
-            }
-
-            Eigen::MatrixXf W (k_, k_);
-            auto const& Ctransp = Ctransp_max_.topRows(k_);
-            {
-                RuntimeMonitorScope scope(runtime_, "Fetch W");
-                {
-                    uint64_t i = 0;
-                    for (auto it = Lambda.begin (); it != Lambda.end(); it++) {
-                        W.row(i) = Ctransp.col(*it);
-                        i++;
-                    }
-                }
-            }
-
-            Eigen::JacobiSVD<Eigen::MatrixXf> SVD;
-            {
-                RuntimeMonitorScope scope(runtime_, "Compute SVD of W");
-                SVD = W.jacobiSvd(Eigen::ComputeThinU|Eigen::ComputeThinV);
-            }
-
-            Eigen::MatrixXf Winv;
-            {
-                RuntimeMonitorScope scope(runtime_, "Compute W^{-1}");
-                Winv = SVD.matrixV() * (SVD.singularValues()
-                        .unaryExpr([](float v)->float { return (v==0.0f)?0.0f:(1.0f/v); })
-                        .asDiagonal()) * SVD.matrixU().transpose();
-                Winv_max_.topLeftCorner (k_, k_) = Winv;
-            }
-
-
-            {
-                RuntimeMonitorScope scope(runtime_, "Compute R");
-                R_max.topRows (k_) = Winv * Ctransp;
-            }
-
-        }
-
-        {
-            RuntimeMonitorScope runtimeScope (runtime_, "Run oASIS");
+            RuntimeMonitorScope runtimeScope (*runtime_, "Run oASIS");
             while (k_ < max_cols) {
                 auto const& Ctransp = Ctransp_max_.topRows (k_);
                 auto const& Winv = Winv_max_.topLeftCorner (k_, k_);

@@ -3,13 +3,14 @@
 #include <random>
 #include <iostream>
 
-Nystrom::Nystrom(const Data* data, const uint64_t k_) : Ctransp_(k_, data->num_items()), Winv_(k_,k_) {
+Nystrom::Nystrom(const Data* data, const uint64_t k_, const std::shared_ptr<RuntimeMonitor> &runtime)
+        : Ctransp_(k_, data->num_items()), Winv_(k_,k_), runtime_(runtime) {
     uint64_t nitems = data->num_items();
 
     uint64_t k = k_;
 
     {
-        RuntimeMonitorScope scope (runtime_, "Choose ", k, " columns");
+        RuntimeMonitorScope scope (*runtime_, "Choose ", k, " columns");
         std::random_device random_device;
         std::mt19937 rnd(random_device());
         for (uint64_t i = 0; i < k; i++) {
@@ -21,7 +22,7 @@ Nystrom::Nystrom(const Data* data, const uint64_t k_) : Ctransp_(k_, data->num_i
 
 
     {
-        RuntimeMonitorScope scope (runtime_, "Compute C_k^T");
+        RuntimeMonitorScope scope (*runtime_, "Compute C_k^T");
         uint64_t j = 0;
         for (auto it = Lambda_.begin (); it != Lambda_.end(); it++) {
             Ctransp_.row(j++) = data->column(*it);
@@ -30,7 +31,7 @@ Nystrom::Nystrom(const Data* data, const uint64_t k_) : Ctransp_(k_, data->num_i
 
     Eigen::MatrixXf W (k, k);
     {
-        RuntimeMonitorScope scope (runtime_, "Fetch W");
+        RuntimeMonitorScope scope (*runtime_, "Fetch W");
         uint64_t i = 0;
         for (auto it = Lambda_.begin (); it != Lambda_.end(); it++) {
             W.row(i) = Ctransp_.col(*it);
@@ -40,12 +41,12 @@ Nystrom::Nystrom(const Data* data, const uint64_t k_) : Ctransp_(k_, data->num_i
 
     Eigen::JacobiSVD<Eigen::MatrixXf> SVD;
     {
-        RuntimeMonitorScope scope (runtime_, "Compute SVD of W");
+        RuntimeMonitorScope scope (*runtime_, "Compute SVD of W");
         SVD = W.jacobiSvd (Eigen::ComputeThinU|Eigen::ComputeThinV);
     }
 
     {
-        RuntimeMonitorScope scope (runtime_, "Compute W^{-1}");
+        RuntimeMonitorScope scope (*runtime_, "Compute W^{-1}");
         Winv_ = SVD.matrixV() * (SVD.singularValues()
                 .unaryExpr([](float v)->float { return (v==0.0f)?0.0f:(1.0f/v); })
                 .asDiagonal()) * SVD.matrixU().transpose();

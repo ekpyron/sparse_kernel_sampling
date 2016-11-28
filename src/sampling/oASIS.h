@@ -3,20 +3,21 @@
 
 #include <data/Data.hpp>
 #include <utility/RuntimeMonitor.hpp>
+#include <memory>
 
 class oASIS {
 public:
-    oASIS(const Data *data, const uint64_t init_cols = 10, const uint64_t max_cols = 200, const float err_tolerance = 0.0f);
+    oASIS(const Data *data, const std::shared_ptr<RuntimeMonitor> &runtime = std::make_shared<RuntimeMonitor>());
     ~oASIS(void);
     float GetError(const Data *data) const;
     float GetRuntime(void) const {
-        return runtime_.get().count();
+        return runtime_->get().count();
     }
 private:
     Eigen::MatrixXf Winv_max_;
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Ctransp_max_;
     uint64_t k_;
-    RuntimeMonitor runtime_;
+    std::shared_ptr<RuntimeMonitor> runtime_;
 };
 
 
