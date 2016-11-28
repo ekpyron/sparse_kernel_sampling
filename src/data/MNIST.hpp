@@ -1,19 +1,20 @@
-#ifndef SPARSE_KERNEL_SAMPLING_MNIST_H
-#define SPARSE_KERNEL_SAMPLING_MNIST_H
+#ifndef SPARSE_KERNEL_SAMPLING_MNIST_MMAP_H
+#define SPARSE_KERNEL_SAMPLING_MNIST_MMAP_H
 
 #include "Data.hpp"
-#include <fstream>
+#include <cstdint>
 
 class MNIST : public Data {
 public:
     MNIST(int argc, char **argv);
     virtual ~MNIST(void);
-    virtual uint64_t num_items (void) {
+    virtual uint64_t num_items (void) const {
         return num_items_;
     }
+    virtual Eigen::VectorXf column (uint64_t i) const;
+    virtual Eigen::RowVectorXf diagonal (void) const;
 protected:
-    virtual float kernel_distance (uint64_t i, uint64_t j);
-private:
+    virtual float distance (uint64_t i, uint64_t j) const;
     float two_sigma_squared_;
     typedef struct header {
         uint32_t magic;
@@ -21,11 +22,12 @@ private:
         uint32_t rows;
         uint32_t columns;
     } header_t;
-    std::ifstream train_images_;
+    int fd;
+    uint8_t *mem;
     uint32_t num_items_;
     uint32_t rows_;
     uint32_t columns_;
 };
 
 
-#endif /* !defined SPARSE_KERNEL_SAMPLING_MNIST_H */
+#endif /* !defined SPARSE_KERNEL_SAMPLING_MNIST_MMAP_H */

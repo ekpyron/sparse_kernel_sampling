@@ -25,15 +25,15 @@ Abalone::Abalone (int argc, char **argv) {
     float max_dist = 0.0f;
     for (auto i = 0; i < data.size (); i++) {
         for (auto j = i+1; j < data.size(); j++) {
-            float d = (data[i] - data[j]).norm();
+            float d = (data[i] - data[j]).squaredNorm();
             if (d > max_dist) max_dist = d;
         }
     }
 
-    float two_sigma_squared = 2.0f * (0.25f * max_dist * max_dist);
+    float two_sigma_squared = 0.25f * max_dist;
     for (auto i = 0; i < data.size(); i++) {
         for (auto j = 0; j < data.size(); j++) {
-            float dist = (data[i] - data[j]).norm();
+            float dist = (data[i] - data[j]).squaredNorm();
             G_(i,j) = std::exp(-dist / two_sigma_squared);
         }
     }

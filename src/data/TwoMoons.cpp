@@ -1,6 +1,8 @@
 #include "TwoMoons.hpp"
 #include <iostream>
 #include <fstream>
+#include <eigen3/Eigen/Eigen>
+#include <vector>
 #include <cmath>
 
 TwoMoons::TwoMoons(int argc, char **argv) {
@@ -22,18 +24,18 @@ TwoMoons::TwoMoons(int argc, char **argv) {
     float max_dist = 0.0f;
     for (auto i = 0; i < data.size (); i++) {
         for (auto j = i+1; j < data.size(); j++) {
-            float d = (data[i] - data[j]).norm();
+            float d = (data[i] - data[j]).squaredNorm();
             if (d > max_dist) max_dist = d;
         }
     }
-    float sigma = 0.5f * max_dist;
-    float two_sigma_squared = sigma * sigma;
+    float two_sigma_squared = 0.25f * max_dist;
     for (auto i = 0; i < data.size(); i++) {
         for (auto j = 0; j < data.size(); j++) {
-            float dist = (data[i] - data[j]).norm();
+            float dist = (data[i] - data[j]).squaredNorm();
             G_(i,j) = std::exp(-dist / two_sigma_squared);
         }
     }
+    G_ += 0.0001f * Eigen::MatrixXf::Identity(G_.rows(), G_.cols());
     std::cout << "DONE." << std::endl;
 }
 

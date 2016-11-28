@@ -9,15 +9,17 @@ class Abalone : public Data {
 public:
     Abalone (int argc, char **argv);
     virtual ~Abalone (void);
-    virtual uint64_t num_items (void) {
+    virtual uint64_t num_items (void) const {
         return G_.cols();
+    }
+    virtual Eigen::VectorXf column (uint64_t i) const {
+        return G_.col(i);
+    }
+    virtual Eigen::RowVectorXf diagonal (void) const {
+        return G_.diagonal();
     }
     virtual const Eigen::MatrixXf &G(void) const {
         return G_;
-    }
-protected:
-    virtual float kernel_distance (uint64_t i, uint64_t j) {
-        return G_(i,j);
     }
 private:
     Eigen::MatrixXf G_;

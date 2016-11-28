@@ -2,10 +2,11 @@
 #include <cstdlib>
 #include <exception>
 #include <memory>
-#include "MNIST_mmap.hpp"
+#include "data/Abalone.hpp"
+#include "data/MNIST.hpp"
+#include "data/TwoMoons.hpp"
 #include "oASIS.h"
-#include "Abalone.hpp"
-#include "TwoMoons.hpp"
+#include "Nystrom.hpp"
 
 int main(int argc, char *argv[]) {
     try {
@@ -18,7 +19,17 @@ int main(int argc, char *argv[]) {
         } else if (!dataset.compare("MNIST")) {
             data = std::unique_ptr<Data> (new MNIST (argc, argv));
         }
+
+        std::cout << "oASIS:" << std::endl;
         oASIS oasis (data.get());
+        std::cout << std::endl << "Nystrom:" << std::endl;
+        Nystrom nystrom (data.get(), 200);
+        std::cout << std::endl << "Results:" << std::endl;
+        std::cout << "oASIS:" << std::endl;
+        oasis.CheckResult(data.get());
+        std::cout << std::endl << "Nystrom:" << std::endl;
+        nystrom.CheckResult(data.get());
+
         return EXIT_SUCCESS;
     } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
