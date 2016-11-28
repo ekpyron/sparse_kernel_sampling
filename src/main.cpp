@@ -9,6 +9,7 @@
 #include <sampling/oASIS.h>
 #include <sampling/Nystrom.hpp>
 #include <utility/Arguments.hpp>
+#include <iomanip>
 
 int main(int argc, char *argv[]) {
     try {
@@ -38,10 +39,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Running Nystrom..." << std::endl;
         Nystrom nystrom (data.get(), 200);
         std::cout << "DONE." << std::endl;
-        std::cout << "oASIS Runtime: " << oasis.GetRuntime() << " s" << std::endl;
-        std::cout << "oASIS Error: " << oasis.GetError(data.get()) << std::endl;
-        std::cout << "Nystrom Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
-        std::cout << "Nystrom Error: " << nystrom.GetError(data.get()) << std::endl;
+        std::cout << "oASIS:   Error: " << std::setprecision(15) << std::fixed << oasis.GetError(data.get()) << " Runtime: " << oasis.GetRuntime() << " s" << std::endl;
+        std::cout << "Nystrom: Error: " << std::setprecision(15) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
 
         return EXIT_SUCCESS;
     } catch (const std::exception &e) {
