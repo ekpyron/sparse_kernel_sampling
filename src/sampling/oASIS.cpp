@@ -103,9 +103,10 @@ float_type oASIS<float_type>::GetError(const Data<float_type>* data) const {
         MatrixType Gtilde = Ctransp.transpose () * Winv * Ctransp;
         return (data->G()-Gtilde).norm() / (data->G().norm());
     } else {
-        return -1.0;
+        return float_type(-1.0);
     }
 }
 
 template class oASIS<float>;
 template class oASIS<double>;
+template class oASIS<long double>;

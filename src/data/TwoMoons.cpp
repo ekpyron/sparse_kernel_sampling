@@ -23,6 +23,13 @@ struct parse_data<double> {
         std::sscanf(line.c_str(), "%lf %lf", &data(0), &data(1));
     }
 };
+
+template<>
+struct parse_data<long double> {
+    static void parse(const std::string &line, Eigen::Matrix<long double, 1, 2> &data) {
+        std::sscanf(line.c_str(), "%Lf %Lf", &data(0), &data(1));
+    }
+};
 }
 
 template<typename float_type>
@@ -66,3 +73,4 @@ TwoMoons<float_type>::~TwoMoons(void) {
 
 template class TwoMoons<float>;
 template class TwoMoons<double>;
+template class TwoMoons<long double>;

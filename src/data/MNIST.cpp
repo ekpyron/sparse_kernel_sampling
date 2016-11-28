@@ -89,3 +89,4 @@ float_type MNIST<float_type>::distance (uint64_t i, uint64_t j) const {
 
 template class MNIST<float>;
 template class MNIST<double>;
+template class MNIST<long double>;

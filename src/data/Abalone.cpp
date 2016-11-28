@@ -28,6 +28,15 @@ struct parse_data<double> {
                     &data(3), &data(4), &data(5), &data(6), &data(7));
     }
 };
+
+template<>
+struct parse_data<long double> {
+    static void parse(const std::string &line, Eigen::Matrix<long double, 8, 1> &data) {
+        char c;
+        std::sscanf(line.c_str(), "%c %Lf %Lf %Lf %Lf %Lf %Lf %Lf %Lf", &c, &data(0), &data(1), &data(2),
+                    &data(3), &data(4), &data(5), &data(6), &data(7));
+    }
+};
 }
 
 template<typename float_type>
@@ -71,3 +80,4 @@ Abalone<float_type>::~Abalone (void) {
 
 template class Abalone<float>;
 template class Abalone<double>;
+template class Abalone<long double>;

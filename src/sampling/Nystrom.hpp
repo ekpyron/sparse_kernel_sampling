@@ -29,9 +29,13 @@ public:
     float_type GetRuntime (void) {
         return runtime_->get().count();
     }
+    uint64_t k(void) const {
+        return k_;
+    }
 private:
     RowMatrixType Ctransp_;
     MatrixType Winv_;
+    uint64_t k_;
     std::vector<uint64_t> Lambda_;
     std::shared_ptr<RuntimeMonitor> runtime_;
 };

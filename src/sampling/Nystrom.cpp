@@ -4,11 +4,9 @@
 #include <iostream>
 
 template<typename float_type>
-Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k_, const std::shared_ptr<RuntimeMonitor> &runtime)
-        : Ctransp_(k_, data->num_items()), Winv_(k_,k_), runtime_(runtime) {
+Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, const std::shared_ptr<RuntimeMonitor> &runtime)
+        : Ctransp_(k, data->num_items()), Winv_(k, k), k_ (k), runtime_(runtime) {
     uint64_t nitems = data->num_items();
-
-    uint64_t k = k_;
 
     {
         RuntimeMonitorScope scope (*runtime_, "Choose ", k, " columns");
@@ -43,7 +41,7 @@ Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k_, co
     Eigen::JacobiSVD<MatrixType> SVD;
     {
         RuntimeMonitorScope scope (*runtime_, "Compute SVD of W");
-        SVD = W.jacobiSvd (Eigen::ComputeFullU|Eigen::ComputeFullV);//Eigen::ComputeThinU|Eigen::ComputeThinV);
+        SVD = W.jacobiSvd (Eigen::ComputeFullU|Eigen::ComputeFullV);
     }
 
     {
@@ -64,9 +62,10 @@ float_type Nystrom<float_type>::GetError(const Data<float_type>* data) {
         MatrixType Gtilde = Ctransp_.transpose() * Winv_ * Ctransp_;
         return (data->G()-Gtilde).norm()/(data->G().norm());
     } else {
-        return -1.0f;
+        return float_type(-1.0);
     }
 }
 
 template class Nystrom<float>;
 template class Nystrom<double>;
+template class Nystrom<long double>;

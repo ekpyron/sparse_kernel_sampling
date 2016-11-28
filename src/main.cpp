@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
         Nystrom<float_type> nystrom (data.get(), 200);
         std::cout << "DONE." << std::endl;
         std::cout << "oASIS (" << oasis.k() << "):" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << oasis.GetError(data.get()) << " Runtime: " << oasis.GetRuntime() << " s" << std::endl;
-        std::cout << "Nystrom:" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
+        std::cout << "Nystrom (" << nystrom.k() << "):" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
 
         return EXIT_SUCCESS;
     } catch (const std::exception &e) {
