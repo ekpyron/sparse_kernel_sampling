@@ -5,6 +5,8 @@
 #ifdef USE_MPFR
 #include <mpreal.h>
 #endif
+#include <utility/mymath.hpp>
+#include <utility/Arguments.hpp>
 
 template<typename float_type>
 Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, const std::shared_ptr<RuntimeMonitor> &runtime)
@@ -47,11 +49,23 @@ Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, con
         SVD = W.jacobiSvd (Eigen::ComputeFullU|Eigen::ComputeFullV);
     }
 
+    int small_singular_values = 0;
     {
-        RuntimeMonitorScope scope (*runtime_, "Compute W^{-1}");
-        Winv_ = SVD.matrixV() * (SVD.singularValues()
-                .unaryExpr([](float_type v)->float_type { return (v==float_type(0.0))?float_type(0.0):(float_type(1.0)/v); })
-                .asDiagonal()) * SVD.matrixU().transpose();
+        RuntimeMonitorScope scope (*runtime_, "Compute W^{-1} (", SVD.nonzeroSingularValues(), ")");
+        auto singValInv = SVD.singularValues();
+        for (auto i = 0; i < singValInv.rows(); i++) {
+            float_type &v = singValInv(i);
+            if (my_abs(v)<=float_type(1e-10)) {
+                small_singular_values++;
+                v = float_type(0.0);
+            } else {
+                v = (float_type(1.0)/v);
+            }
+        }
+        Winv_ = SVD.matrixV() * (singValInv.asDiagonal()) * SVD.matrixU().transpose();
+    }
+    if (small_singular_values && Arguments::get().verbose()) {
+        std::cout << "  (" << small_singular_values << " singular values < 1e-10 were cut off)" << std::endl;
     }
 }
 
