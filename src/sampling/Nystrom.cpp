@@ -33,9 +33,10 @@ Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, con
         }
     }
 
-    MatrixType W (k, k);
+    MatrixType W;
     {
         RuntimeMonitorScope scope (*runtime_, "Fetch W");
+        W = MatrixType (k, k);
         uint64_t i = 0;
         for (auto it = Lambda_.begin (); it != Lambda_.end(); it++) {
             W.row(i) = Ctransp_.col(*it);

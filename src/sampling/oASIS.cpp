@@ -17,25 +17,37 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
     const uint64_t init_cols = 10;
     const uint64_t max_cols = 200;
     const float_type err_tolerance = std::numeric_limits<float>::epsilon();
-    Winv_max_ = MatrixType (max_cols, max_cols);
-    Ctransp_max_ = RowMatrixType (max_cols, data->num_items ());
+    {
+        RuntimeMonitorScope scope(*runtime_, "Memory allocation");
+        Winv_max_ = MatrixType (max_cols, max_cols);
+        Ctransp_max_ = RowMatrixType (max_cols, data->num_items ());
+    }
     k_ = init_cols;
 
     uint64_t nitems = data->num_items();
 
     {
-        MatrixType R_max (max_cols, nitems);
-        RowVectorType Delta(nitems), d(nitems);
-
-        std::vector<bool> sampled(nitems, false);
+        MatrixType R_max;
+        RowVectorType Delta, d;
+        std::vector<bool> sampled;
+        {
+            RuntimeMonitorScope scope(*runtime_, "Memory allocation");
+            sampled.resize (nitems, false);
+            R_max = MatrixType (max_cols, nitems);
+            Delta = RowVectorType (nitems);
+            d = RowVectorType (nitems);
+        }
 
         {
             Nystrom<float_type> nystrom (data, k_, runtime_);
 
-            Ctransp_max_.topRows(k_) = nystrom.Ctransp();
-            Winv_max_.topLeftCorner (k_, k_) = nystrom.Winv();
-            for (auto &col : nystrom.Lambda()) {
-                sampled[col] = true;
+            {
+                RuntimeMonitorScope scope(*runtime_, "Copy");
+                Ctransp_max_.topRows(k_) = nystrom.Ctransp();
+                Winv_max_.topLeftCorner (k_, k_) = nystrom.Winv();
+                for (auto &col : nystrom.Lambda()) {
+                    sampled[col] = true;
+                }
             }
 
             {
