@@ -5,6 +5,10 @@
 #include <chrono>
 #include "Nystrom.hpp"
 #include <utility/Arguments.hpp>
+#include <utility/mymath.hpp>
+#ifdef USE_MPFR
+#include <mpreal.h>
+#endif
 
 template<typename float_type>
 oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<RuntimeMonitor> &runtime)
@@ -53,11 +57,11 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
                 auto const& R = R_max.topRows (k_);
                 Delta = d - Ctransp.cwiseProduct(R).colwise().sum();
 
-                float_type err = 0.0f;
+                float_type err = float_type(0.0);
                 uint64_t i = 0;
                 for (uint64_t j = 0; j < nitems; j++) {
                     if (!sampled[j]) {
-                        float_type v = std::abs(Delta(j));
+                        float_type v = my_abs(Delta(j));
                         if (v > err) {
                             err = v; i = j;
                         }
@@ -65,7 +69,7 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
                 }
                 if (err <= err_tolerance) break;
 
-                float s = 1.0f / Delta(i);
+                float s = float_type(1.0) / Delta(i);
 
                 const RowVectorType &q = R.col(i);
 
@@ -110,3 +114,6 @@ float_type oASIS<float_type>::GetError(const Data<float_type>* data) const {
 template class oASIS<float>;
 template class oASIS<double>;
 template class oASIS<long double>;
+#ifdef USE_MPFR
+template class oASIS<mpfr::mpreal>;
+#endif

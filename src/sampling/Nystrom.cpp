@@ -2,6 +2,9 @@
 #include <eigen3/Eigen/Eigen>
 #include <random>
 #include <iostream>
+#ifdef USE_MPFR
+#include <mpreal.h>
+#endif
 
 template<typename float_type>
 Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k, const std::shared_ptr<RuntimeMonitor> &runtime)
@@ -69,3 +72,6 @@ float_type Nystrom<float_type>::GetError(const Data<float_type>* data) {
 template class Nystrom<float>;
 template class Nystrom<double>;
 template class Nystrom<long double>;
+#ifdef USE_MPFR
+template class Nystrom<mpfr::mpreal>;
+#endif

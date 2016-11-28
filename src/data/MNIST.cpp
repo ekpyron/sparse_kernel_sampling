@@ -7,6 +7,10 @@
 #include <fcntl.h>
 #include <iostream>
 #include <utility/Arguments.hpp>
+#include <utility/mymath.hpp>
+#ifdef USE_MPFR
+#include <mpreal.h>
+#endif
 
 inline uint32_t byteswap32(uint32_t v) {
     return ((v&0xFF)<<24)|(((v>>8)&0xFF)<<16)|(((v>>16)&0xFF)<<8)|((v>>24)&0xFF);
@@ -59,7 +63,7 @@ typename MNIST<float_type>::VectorType MNIST<float_type>::column (uint64_t i) co
             float_type d = float_type(1.0/255.0) * (float_type (int(data_i[k]) - int(*data_j++)));
             dist += d*d;
         }
-        c(j) = std::exp(-dist/two_sigma_squared_);
+        c(j) = my_exp(-dist/two_sigma_squared_);
     }
     return c;
 }
@@ -79,14 +83,17 @@ template<typename float_type>
 float_type MNIST<float_type>::distance (uint64_t i, uint64_t j) const {
     uint8_t *data_i = mem + i * rows_ * columns_;
     uint8_t *data_j = mem + j * rows_ * columns_;
-    float dist = 0.0;
+    float_type dist = 0.0;
     for (auto k = 0; k < rows_*columns_; k++) {
         float_type d = float_type(1.0/255.0) * (float_type (int(data_i[k]) - int(data_j[k])));
         dist += d*d;
     }
-    return std::exp(-dist/two_sigma_squared_);
+    return my_exp(-dist/two_sigma_squared_);
 }
 
 template class MNIST<float>;
 template class MNIST<double>;
 template class MNIST<long double>;
+#ifdef USE_MPFR
+template class MNIST<mpfr::mpreal>;
+#endif

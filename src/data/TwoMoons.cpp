@@ -5,6 +5,12 @@
 #include <vector>
 #include <cmath>
 #include <utility/Arguments.hpp>
+#include <utility/mymath.hpp>
+#ifdef USE_MPFR
+#include <sstream>
+#include <mpreal.h>
+#endif
+
 
 namespace {
 template<typename float_type>
@@ -30,6 +36,21 @@ struct parse_data<long double> {
         std::sscanf(line.c_str(), "%Lf %Lf", &data(0), &data(1));
     }
 };
+
+#ifdef USE_MPFR
+template<>
+struct parse_data<mpfr::mpreal> {
+    static void parse(const std::string &line, Eigen::Matrix<mpfr::mpreal, 1, 2> &mpreal_data) {
+        std::istringstream stream(line);
+        std::string number;
+        int i = 0;
+        while (std::getline(stream, number, ' ') && i < 2) {
+            mpreal_data(i++) = mpfr::mpreal(number);
+        }
+    }
+};
+#endif
+
 }
 
 template<typename float_type>
@@ -61,7 +82,7 @@ TwoMoons<float_type>::TwoMoons(void) {
     for (auto i = 0; i < data.size(); i++) {
         for (auto j = 0; j < data.size(); j++) {
             float dist = (data[i] - data[j]).squaredNorm();
-            G_(i,j) = std::exp(-dist / two_sigma_squared);
+            G_(i,j) = my_exp(-dist / two_sigma_squared);
         }
     }
     if (verbose) std::cout << "  DONE." << std::endl;
@@ -74,3 +95,6 @@ TwoMoons<float_type>::~TwoMoons(void) {
 template class TwoMoons<float>;
 template class TwoMoons<double>;
 template class TwoMoons<long double>;
+#ifdef USE_MPFR
+template class TwoMoons<mpfr::mpreal>;
+#endif

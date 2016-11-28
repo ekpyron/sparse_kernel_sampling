@@ -10,6 +10,9 @@
 #include <sampling/Nystrom.hpp>
 #include <utility/Arguments.hpp>
 #include <iomanip>
+#ifdef USE_MPFR
+#include <mpreal.h>
+#endif
 
 int main(int argc, char *argv[]) {
     try {
@@ -41,8 +44,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Running Nystrom..." << std::endl;
         Nystrom<float_type> nystrom (data.get(), 200);
         std::cout << "DONE." << std::endl;
-        std::cout << "oASIS (" << oasis.k() << "):" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << oasis.GetError(data.get()) << " Runtime: " << oasis.GetRuntime() << " s" << std::endl;
-        std::cout << "Nystrom (" << nystrom.k() << "):" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
+        std::cout << "oASIS (" << oasis.k() << "):" << std::endl << "  Error: " << std::setprecision(20) << std::fixed << oasis.GetError(data.get()) << " Runtime: " << oasis.GetRuntime() << " s" << std::endl;
+        std::cout << "Nystrom (" << nystrom.k() << "):" << std::endl << "  Error: " << std::setprecision(20) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
 
         return EXIT_SUCCESS;
     } catch (const std::exception &e) {

@@ -6,6 +6,11 @@
 #include <eigen3/Eigen/Eigen>
 #include <cmath>
 #include <utility/Arguments.hpp>
+#ifdef USE_MPFR
+#include <sstream>
+#include <mpreal.h>
+#endif
+#include <utility/mymath.hpp>
 
 namespace {
 template<typename float_type>
@@ -37,6 +42,22 @@ struct parse_data<long double> {
                     &data(3), &data(4), &data(5), &data(6), &data(7));
     }
 };
+
+#ifdef USE_MPFR
+template<>
+struct parse_data<mpfr::mpreal> {
+    static void parse(const std::string &line, Eigen::Matrix<mpfr::mpreal, 8, 1> &mpreal_data) {
+        std::istringstream stream(line);
+        std::string number;
+        std::getline(stream, number, ' ');
+        int i = 0;
+        while (std::getline(stream, number, ' ') && i < 8) {
+            mpreal_data(i++) = mpfr::mpreal(number);
+        }
+    }
+};
+#endif
+
 }
 
 template<typename float_type>
@@ -68,7 +89,7 @@ Abalone<float_type>::Abalone (void) {
     for (auto i = 0; i < data.size(); i++) {
         for (auto j = 0; j < data.size(); j++) {
             float_type dist = (data[i] - data[j]).squaredNorm();
-            G_(i,j) = std::exp(-dist / two_sigma_squared);
+            G_(i,j) = my_exp(-dist / two_sigma_squared);
         }
     }
     if (verbose) std::cout << "  DONE." << std::endl;
@@ -81,3 +102,6 @@ Abalone<float_type>::~Abalone (void) {
 template class Abalone<float>;
 template class Abalone<double>;
 template class Abalone<long double>;
+#ifdef USE_MPFR
+template class Abalone<mpfr::mpreal>;
+#endif
