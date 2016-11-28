@@ -7,41 +7,67 @@
 #include <cmath>
 #include <utility/Arguments.hpp>
 
-Abalone::Abalone (void) {
+namespace {
+template<typename float_type>
+struct parse_data;
+
+template<>
+struct parse_data<float> {
+    static void parse(const std::string &line, Eigen::Matrix<float, 8, 1> &data) {
+        char c;
+        std::sscanf(line.c_str(), "%c %f %f %f %f %f %f %f %f", &c, &data(0), &data(1), &data(2),
+                    &data(3), &data(4), &data(5), &data(6), &data(7));
+    }
+};
+
+template<>
+struct parse_data<double> {
+    static void parse(const std::string &line, Eigen::Matrix<double, 8, 1> &data) {
+        char c;
+        std::sscanf(line.c_str(), "%c %lf %lf %lf %lf %lf %lf %lf %lf", &c, &data(0), &data(1), &data(2),
+                    &data(3), &data(4), &data(5), &data(6), &data(7));
+    }
+};
+}
+
+template<typename float_type>
+Abalone<float_type>::Abalone (void) {
     bool verbose = Arguments::get().verbose();
     if (verbose) std::cout << "  Read abalone data..." << std::endl;
     std::ifstream f ("abalone.data", std::ios_base::in);
     if (!f.is_open ()) throw std::runtime_error("Cannot open abalone dataset.");
     std::string line;
-    std::vector<Eigen::Matrix<float, 8, 1>> data;
+    std::vector<Eigen::Matrix<float_type, 8, 1>> data;
     while (std::getline(f, line).good()) {
         char c;
         data.emplace_back();
-        std::sscanf(line.c_str(), "%c %f %f %f %f %f %f %f %f", &c, &data.back()(0), &data.back()(1), &data.back()(2),
-                    &data.back()(3), &data.back()(4), &data.back()(5), &data.back()(6), &data.back()(7));
+        parse_data<float_type>::parse(line, data.back());
     }
     if (verbose) std::cout << "  DONE." << std::endl;
     if (verbose) std::cout << "  Compute Gram Matrix..." << std::endl;
     G_.resize (data.size(), data.size());
 
-    float max_dist = 0.0f;
+    float_type max_dist = 0.0f;
     for (auto i = 0; i < data.size (); i++) {
         for (auto j = i+1; j < data.size(); j++) {
-            float d = (data[i] - data[j]).squaredNorm();
+            float_type d = (data[i] - data[j]).squaredNorm();
             if (d > max_dist) max_dist = d;
         }
     }
 
-    float two_sigma_squared = 0.25f * max_dist;
+    float_type two_sigma_squared = 0.25f * max_dist;
     for (auto i = 0; i < data.size(); i++) {
         for (auto j = 0; j < data.size(); j++) {
-            float dist = (data[i] - data[j]).squaredNorm();
+            float_type dist = (data[i] - data[j]).squaredNorm();
             G_(i,j) = std::exp(-dist / two_sigma_squared);
         }
     }
     if (verbose) std::cout << "  DONE." << std::endl;
 }
 
-Abalone::~Abalone (void) {
-
+template<typename float_type>
+Abalone<float_type>::~Abalone (void) {
 }
+
+template class Abalone<float>;
+template class Abalone<double>;

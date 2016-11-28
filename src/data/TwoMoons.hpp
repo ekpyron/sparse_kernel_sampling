@@ -5,24 +5,29 @@
 #include <vector>
 #include <eigen3/Eigen/Eigen>
 
-class TwoMoons : public Data {
+template<typename float_type>
+class TwoMoons : public Data<float_type> {
 public:
+    typedef typename Data<float_type>::VectorType VectorType;
+    typedef typename Data<float_type>::RowVectorType RowVectorType;
+    typedef typename Data<float_type>::MatrixType MatrixType;
+
     TwoMoons(void);
     virtual ~TwoMoons(void);
     virtual uint64_t num_items (void) const {
         return G_.cols();
     }
-    virtual Eigen::VectorXf column (uint64_t i) const {
+    virtual VectorType column (uint64_t i) const {
         return G_.col(i);
     }
-    virtual Eigen::RowVectorXf diagonal (void) const {
+    virtual RowVectorType diagonal (void) const {
         return G_.diagonal();
     }
-    virtual const Eigen::MatrixXf &G(void) const {
+    virtual const MatrixType &G(void) const {
         return G_;
     }
 private:
-    Eigen::MatrixXf G_;
+    MatrixType G_;
 };
 
 

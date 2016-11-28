@@ -12,7 +12,8 @@ inline uint32_t byteswap32(uint32_t v) {
     return ((v&0xFF)<<24)|(((v>>8)&0xFF)<<16)|(((v>>16)&0xFF)<<8)|((v>>24)&0xFF);
 }
 
-MNIST::MNIST(void) : two_sigma_squared_ (392.0) {
+template<typename float_type>
+MNIST<float_type>::MNIST(void) : two_sigma_squared_ (392.0) {
     struct stat sb;
     fd = open("train-images-idx3-ubyte", O_RDONLY);
     if (fd == -1) {
@@ -42,43 +43,49 @@ MNIST::MNIST(void) : two_sigma_squared_ (392.0) {
     mem += sizeof (header_t);
 }
 
-MNIST::~MNIST(void) {
+template<typename float_type>
+MNIST<float_type>::~MNIST(void) {
 }
 
 
-Eigen::VectorXf MNIST::column (uint64_t i) const {
-    Eigen::VectorXf c(num_items_);
+template<typename float_type>
+typename MNIST<float_type>::VectorType MNIST<float_type>::column (uint64_t i) const {
+    VectorType c(num_items_);
     uint8_t *data_j = mem;
     uint8_t *data_i = mem + i * rows_ * columns_;
     for (auto j = 0; j < num_items_; j++) {
-        float dist = 0.0;
+        float_type dist = 0.0;
         for (auto k = 0; k < rows_*columns_; k++) {
-            float d = (1.0f/255.0f) * (float (int(data_i[k]) - int(*data_j++)));
+            float_type d = float_type(1.0/255.0) * (float_type (int(data_i[k]) - int(*data_j++)));
             dist += d*d;
         }
         c(j) = std::exp(-dist/two_sigma_squared_);
     }
     return c;
 }
-
-Eigen::RowVectorXf MNIST::diagonal (void) const {
-/*    Eigen::RowVectorXf d(num_items_);
+template<typename float_type>
+typename MNIST<float_type>::RowVectorType MNIST<float_type>::diagonal (void) const {
+/*    RowVectorType d(num_items_);
     for (uint64_t i = 0; i < num_items_; i++) {
         d(i) = distance(i,i);
     }
     return d;*/
-    Eigen::RowVectorXf d(num_items_);
+    RowVectorType d(num_items_);
     d.setOnes();
     return d;
 }
 
-float MNIST::distance (uint64_t i, uint64_t j) const {
+template<typename float_type>
+float_type MNIST<float_type>::distance (uint64_t i, uint64_t j) const {
     uint8_t *data_i = mem + i * rows_ * columns_;
     uint8_t *data_j = mem + j * rows_ * columns_;
     float dist = 0.0;
     for (auto k = 0; k < rows_*columns_; k++) {
-        float d = (1.0f/255.0f) * (float (int(data_i[k]) - int(data_j[k])));
+        float_type d = float_type(1.0/255.0) * (float_type (int(data_i[k]) - int(data_j[k])));
         dist += d*d;
     }
     return std::exp(-dist/two_sigma_squared_);
 }
+
+template class MNIST<float>;
+template class MNIST<double>;

@@ -17,30 +17,32 @@ int main(int argc, char *argv[]) {
             return EXIT_SUCCESS;
         }
 
-        std::unique_ptr<Data> data;
+        typedef double float_type;
+
+        std::unique_ptr<Data<float_type>> data;
 
         std::cout << "Fetch input data..." << std::endl;
         switch (Arguments::get().input_data_type()) {
             case InputDataType::TwoMoons:
-                data = std::unique_ptr<Data> (new TwoMoons ());
+                data = std::unique_ptr<Data<float_type>> (new TwoMoons<float_type> ());
                 break;
             case InputDataType::Abalone:
-                data = std::unique_ptr<Data> (new Abalone ());
+                data = std::unique_ptr<Data<float_type>> (new Abalone<float_type> ());
                 break;
             case InputDataType::MNIST:
-                data = std::unique_ptr<Data> (new MNIST ());
+                data = std::unique_ptr<Data<float_type>> (new MNIST<float_type> ());
                 break;
         }
         std::cout << "DONE." << std::endl;
 
         std::cout << "Running oASIS..." << std::endl;
-        oASIS oasis (data.get());
+        oASIS<float_type> oasis (data.get());
         std::cout << "DONE." << std::endl;
         std::cout << "Running Nystrom..." << std::endl;
-        Nystrom nystrom (data.get(), 200);
+        Nystrom<float_type> nystrom (data.get(), 200);
         std::cout << "DONE." << std::endl;
-        std::cout << "oASIS:   Error: " << std::setprecision(15) << std::fixed << oasis.GetError(data.get()) << " Runtime: " << oasis.GetRuntime() << " s" << std::endl;
-        std::cout << "Nystrom: Error: " << std::setprecision(15) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
+        std::cout << "oASIS (" << oasis.k() << "):" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << oasis.GetError(data.get()) << " Runtime: " << oasis.GetRuntime() << " s" << std::endl;
+        std::cout << "Nystrom:" << std::endl << "  Error: " << std::setprecision(15) << std::fixed << nystrom.GetError(data.get()) << " Runtime: " << nystrom.GetRuntime() << " s" << std::endl;
 
         return EXIT_SUCCESS;
     } catch (const std::exception &e) {

@@ -4,18 +4,23 @@
 #include "Data.hpp"
 #include <cstdint>
 
-class MNIST : public Data {
+template<typename float_type>
+class MNIST : public Data<float_type> {
 public:
+    typedef typename Data<float_type>::VectorType VectorType;
+    typedef typename Data<float_type>::RowVectorType RowVectorType;
+    typedef typename Data<float_type>::MatrixType MatrixType;
+
     MNIST(void);
     virtual ~MNIST(void);
     virtual uint64_t num_items (void) const {
         return num_items_;
     }
-    virtual Eigen::VectorXf column (uint64_t i) const;
-    virtual Eigen::RowVectorXf diagonal (void) const;
+    virtual VectorType column (uint64_t i) const;
+    virtual RowVectorType diagonal (void) const;
 protected:
-    virtual float distance (uint64_t i, uint64_t j) const;
-    float two_sigma_squared_;
+    virtual float_type distance (uint64_t i, uint64_t j) const;
+    float_type two_sigma_squared_;
     typedef struct header {
         uint32_t magic;
         uint32_t num_items;

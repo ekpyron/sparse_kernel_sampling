@@ -3,7 +3,8 @@
 #include <random>
 #include <iostream>
 
-Nystrom::Nystrom(const Data* data, const uint64_t k_, const std::shared_ptr<RuntimeMonitor> &runtime)
+template<typename float_type>
+Nystrom<float_type>::Nystrom(const Data<float_type>* data, const uint64_t k_, const std::shared_ptr<RuntimeMonitor> &runtime)
         : Ctransp_(k_, data->num_items()), Winv_(k_,k_), runtime_(runtime) {
     uint64_t nitems = data->num_items();
 
@@ -29,7 +30,7 @@ Nystrom::Nystrom(const Data* data, const uint64_t k_, const std::shared_ptr<Runt
         }
     }
 
-    Eigen::MatrixXf W (k, k);
+    MatrixType W (k, k);
     {
         RuntimeMonitorScope scope (*runtime_, "Fetch W");
         uint64_t i = 0;
@@ -39,28 +40,33 @@ Nystrom::Nystrom(const Data* data, const uint64_t k_, const std::shared_ptr<Runt
         }
     }
 
-    Eigen::JacobiSVD<Eigen::MatrixXf> SVD;
+    Eigen::JacobiSVD<MatrixType> SVD;
     {
         RuntimeMonitorScope scope (*runtime_, "Compute SVD of W");
-        SVD = W.jacobiSvd (Eigen::ComputeThinU|Eigen::ComputeThinV);
+        SVD = W.jacobiSvd (Eigen::ComputeFullU|Eigen::ComputeFullV);//Eigen::ComputeThinU|Eigen::ComputeThinV);
     }
 
     {
         RuntimeMonitorScope scope (*runtime_, "Compute W^{-1}");
         Winv_ = SVD.matrixV() * (SVD.singularValues()
-                .unaryExpr([](float v)->float { return (v==0.0f)?0.0f:(1.0f/v); })
+                .unaryExpr([](float_type v)->float_type { return (v==float_type(0.0))?float_type(0.0):(float_type(1.0)/v); })
                 .asDiagonal()) * SVD.matrixU().transpose();
     }
 }
 
-Nystrom::~Nystrom(void) {
+template<typename float_type>
+Nystrom<float_type>::~Nystrom(void) {
 }
 
-float Nystrom::GetError(const Data* data) {
+template<typename float_type>
+float_type Nystrom<float_type>::GetError(const Data<float_type>* data) {
     if (data->G().cols() != 0) {
-        Eigen::MatrixXf Gtilde = Ctransp_.transpose() * Winv_ * Ctransp_;
+        MatrixType Gtilde = Ctransp_.transpose() * Winv_ * Ctransp_;
         return (data->G()-Gtilde).norm()/(data->G().norm());
     } else {
         return -1.0f;
     }
 }
+
+template class Nystrom<float>;
+template class Nystrom<double>;

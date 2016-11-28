@@ -6,26 +6,32 @@
 #include <eigen3/Eigen/Eigen>
 #include <memory>
 
+template<typename float_type = float>
 class Nystrom {
 public:
-    Nystrom(const Data *data, const uint64_t k, const std::shared_ptr<RuntimeMonitor> &runtime = std::make_shared<RuntimeMonitor>());
+    typedef Eigen::Matrix<float_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixType;
+    typedef Eigen::Matrix<float_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixType;
+    typedef Eigen::Matrix<float_type, Eigen::Dynamic, 1, Eigen::ColMajor> VectorType;
+    typedef Eigen::Matrix<float_type, 1, Eigen::Dynamic, Eigen::RowMajor> RowVectorType;
+
+    Nystrom(const Data<float_type> *data, const uint64_t k, const std::shared_ptr<RuntimeMonitor> &runtime = std::make_shared<RuntimeMonitor>());
     ~Nystrom(void);
-    const Eigen::MatrixXf &Winv(void) const {
+    const MatrixType &Winv(void) const {
         return Winv_;
     }
-    const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> &Ctransp(void) const {
+    const RowMatrixType &Ctransp(void) const {
         return Ctransp_;
     }
     const std::vector<uint64_t> &Lambda(void) const {
         return Lambda_;
     }
-    float GetError (const Data *data);
-    float GetRuntime (void) {
+    float_type GetError (const Data<float_type> *data);
+    float_type GetRuntime (void) {
         return runtime_->get().count();
     }
 private:
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Ctransp_;
-    Eigen::MatrixXf Winv_;
+    RowMatrixType Ctransp_;
+    MatrixType Winv_;
     std::vector<uint64_t> Lambda_;
     std::shared_ptr<RuntimeMonitor> runtime_;
 };
