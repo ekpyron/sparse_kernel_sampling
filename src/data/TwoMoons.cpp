@@ -1,7 +1,7 @@
 #include "TwoMoons.hpp"
 #include <iostream>
 #include <fstream>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <vector>
 #include <cmath>
 #include <utility/Arguments.hpp>

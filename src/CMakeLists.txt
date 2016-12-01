@@ -7,6 +7,10 @@ if(MPFR_FOUND AND NOT DISABLE_MPFR)
     add_definitions(-DUSE_MPFR)
 endif()
 
+if (NOT ("${EIGEN3_VERSION_MAJOR}.${EIGEN3_VERSION_MINOR}" VERSION_LESS "3.3"))
+    add_definitions(-DUSE_BDCSVD)
+endif()
+
 if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_C_FLAGS}")

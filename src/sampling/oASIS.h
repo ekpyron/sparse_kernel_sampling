@@ -26,7 +26,11 @@ private:
     MatrixType Winv_max_;
     RowMatrixType Ctransp_max_;
     uint64_t k_;
+    std::vector<uint64_t> Lambda_;
     std::shared_ptr<RuntimeMonitor> runtime_;
+
+    RowVectorType Sigma_;
+    MatrixType U_;
 };
 
 

@@ -3,7 +3,7 @@
 
 #include "Data.hpp"
 #include <vector>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 
 template<typename float_type>
 class TwoMoons : public Data<float_type> {

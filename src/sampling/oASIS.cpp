@@ -1,6 +1,6 @@
 #include <random>
 #include "oASIS.h"
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <iostream>
 #include <chrono>
 #include "Nystrom.hpp"
@@ -39,13 +39,14 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
         }
 
         {
-            Nystrom<float_type> nystrom (data, k_, runtime_);
+            Nystrom<float_type> nystrom (data, k_, false, runtime_);
 
             {
                 RuntimeMonitorScope scope(*runtime_, "Copy");
                 Ctransp_max_.topRows(k_) = nystrom.Ctransp();
                 Winv_max_.topLeftCorner (k_, k_) = nystrom.Winv();
-                for (auto &col : nystrom.Lambda()) {
+                Lambda_ = nystrom.Lambda();
+                for (auto &col : Lambda_) {
                     sampled[col] = true;
                 }
             }
@@ -102,8 +103,25 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
 
                 k_++;
                 sampled[i] = true;
+                Lambda_.push_back(i);
             }
         }
+    }
+
+    {
+        auto const& Ctransp = Ctransp_max_.topRows (k_);
+        MatrixType W;
+        {
+            RuntimeMonitorScope scope (*runtime_, "Fetch W");
+            W = MatrixType (k_, k_);
+            uint64_t i = 0;
+            for (auto it = Lambda_.begin (); it != Lambda_.end(); it++) {
+                W.row(i) = Ctransp.col(*it);
+                i++;
+            }
+        }
+
+        Nystrom<float_type>::ScaleSVD(Sigma_, U_, W, Ctransp, nitems, runtime_);
     }
 }
 
@@ -114,9 +132,7 @@ oASIS<float_type>::~oASIS(void) {
 template<typename float_type>
 float_type oASIS<float_type>::GetError(const Data<float_type>* data) const {
     if (data->G().cols() != 0) {
-        auto const& Ctransp = Ctransp_max_.topRows (k_);
-        auto const& Winv = Winv_max_.topLeftCorner (k_, k_);
-        MatrixType Gtilde = Ctransp.transpose () * Winv * Ctransp;
+        MatrixType Gtilde = U_ * Sigma_.asDiagonal() * U_.transpose();
         return (data->G()-Gtilde).norm() / (data->G().norm());
     } else {
         return float_type(-1.0);
@@ -127,5 +143,5 @@ template class oASIS<float>;
 template class oASIS<double>;
 template class oASIS<long double>;
 #ifdef USE_MPFR
-template class oASIS<mpfr::mpreal>;
+//template class oASIS<mpfr::mpreal>;
 #endif

@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <vector>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <cmath>
 #include <utility/Arguments.hpp>
 #ifdef USE_MPFR

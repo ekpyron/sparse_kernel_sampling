@@ -2,7 +2,7 @@
 #define SPARSE_KERNEL_SAMPLING_DATA_H
 
 #include <cstdint>
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 
 template<typename float_type>
 class Data {
