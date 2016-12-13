@@ -10,16 +10,18 @@ from sklearn.neighbors import KDTree
 
 #input, input_labels = sklearn.datasets.make_moons(1000,noise=0.01)
 input, input_labels = sklearn.datasets.make_circles(1000,factor=0.3,noise=0.05)
-#input, input_labels = sklearn.datasets.make_blobs(1000,centers=3,cluster_std=0.75)
+#input, input_labels = sklearn.datasets.make_blobs(1000,centers=4,cluster_std=0.75)
 
 sigma_factor = 0.25
-initial_columns = 10
-max_columns = 100
+initial_columns = 1
+max_columns = 25
 tolerance = 0.0001
 
 target_dimensions = 1
 num_centers = 2
-cutoff_distance = 0.005
+cutoff_distance = 0.05
+
+centering = True
 
 n = input.shape[0]
 
@@ -29,8 +31,9 @@ D = squareform(pdist(input, 'sqeuclidean'))
 sigma = sigma_factor*numpy.sqrt(D.max())
 K = scipy.exp(-D/(sigma**2))
 
-H = (1/n) * numpy.ones(K.shape)
-K = K - numpy.dot(K,H) - numpy.dot(H,K) + numpy.dot(H,numpy.dot(K,H))
+if centering:
+	H = (1/n) * numpy.ones(K.shape)
+	K = K - numpy.dot(K,H) - numpy.dot(H,K) + numpy.dot(H,numpy.dot(K,H))
 
 Lambda = numpy.arange(n)
 numpy.random.shuffle(Lambda)
@@ -102,7 +105,13 @@ print("|K-K'|: ", numpy.linalg.norm(Kbar-K))
 
 lowdimproj=proj[:,0:target_dimensions]
 lowdimproj_landmarks = lowdimproj[Lambda,:]
-landmark_dists = squareform(pdist(lowdimproj_landmarks, 'euclidean'))
+if centering:
+	#tmp = numpy.diag(W)
+	#landmark_dists = numpy.sqrt(0.5*(numpy.outer(tmp, numpy.ones(k)) + numpy.outer(numpy.ones(k), tmp) - 2 * W))
+	landmark_dists = squareform(pdist(lowdimproj_landmarks, 'euclidean'))
+else:
+	landmark_dists = numpy.sqrt(1 - W)
+
 max_dist = landmark_dists.max()
 print("Maximum distance: ", max_dist)
 
@@ -131,11 +140,7 @@ for i in range(1,k):
 		j = numpy.argmin(landmark_dists[rho_indices[i],rho_indices[0:i]])
 		l[rho_indices[i]] = l[rho_indices[j]]
 
-print(l.shape)
-
 calculated_labels=numpy.dot(l*2-1, Ctransp)
-
-
 
 
 landmarks = input[Lambda,:]
