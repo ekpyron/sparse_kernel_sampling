@@ -10,7 +10,7 @@ from sklearn.neighbors import KDTree
 
 #input, input_labels = sklearn.datasets.make_moons(1000,noise=0.01)
 input, input_labels = sklearn.datasets.make_circles(1000,factor=0.3,noise=0.05)
-#input, input_labels = sklearn.datasets.make_blobs(1000,centers=2,cluster_std=0.5)
+#input, input_labels = sklearn.datasets.make_blobs(1000,centers=3,cluster_std=0.75)
 
 sigma_factor = 0.25
 initial_columns = 10
@@ -19,7 +19,7 @@ tolerance = 0.0001
 
 target_dimensions = 1
 num_centers = 2
-cutoff_distance = 0.2
+cutoff_distance = 0.005
 
 n = input.shape[0]
 
@@ -29,8 +29,8 @@ D = squareform(pdist(input, 'sqeuclidean'))
 sigma = sigma_factor*numpy.sqrt(D.max())
 K = scipy.exp(-D/(sigma**2))
 
-#H = (1/n) * numpy.ones(K.shape)
-#K = K - numpy.dot(K,H) - numpy.dot(H,K) + numpy.dot(H,numpy.dot(K,H))
+H = (1/n) * numpy.ones(K.shape)
+K = K - numpy.dot(K,H) - numpy.dot(H,K) + numpy.dot(H,numpy.dot(K,H))
 
 Lambda = numpy.arange(n)
 numpy.random.shuffle(Lambda)
@@ -100,40 +100,42 @@ print("|K-K'|: ", numpy.linalg.norm(Kbar-K))
 
 
 
-# Build KD Tree
 lowdimproj=proj[:,0:target_dimensions]
-max_dist = lowdimproj.max() - lowdimproj.min()
+lowdimproj_landmarks = lowdimproj[Lambda,:]
+landmark_dists = squareform(pdist(lowdimproj_landmarks, 'euclidean'))
+max_dist = landmark_dists.max()
 print("Maximum distance: ", max_dist)
+
 tree = KDTree(lowdimproj)
-rho = numpy.zeros(n)
-delta = numpy.zeros((n,3))
-delta[:,0] = numpy.ones(n)*1000
-for i in range(0,n):
-	delta[i,1] = i
-	if target_dimensions == 1:
-		point=lowdimproj[i,0]
-	else:
-		point=lowdimproj[i,:]
-	rho[i]=tree.query_radius(point, r=max_dist*cutoff_distance, count_only=True)
+rho = numpy.zeros(k)
+delta = max_dist*numpy.ones(k)
 
-for i in range(0,n):
-	for j in Lambda:
-		dist = numpy.linalg.norm(lowdimproj[i,:]-lowdimproj[j,:])
-		if rho[j] >= rho[i] and dist < delta[i,0]:
-			delta[i] = [dist, i, j]
+for i in range(0,k):
+	rho[i]=tree.query_radius(lowdimproj[Lambda[i]:Lambda[i]+1,:], r=max_dist*cutoff_distance, count_only=True)
 
-sorteddelta = numpy.sort(delta, axis=0)
+rho_indices = numpy.argsort(rho)[::-1]
 
-centers=lowdimproj[sorteddelta[n-num_centers:n,1].astype(int),:]
-calculated_labels=numpy.zeros(n)
+delta[rho_indices[0]] = max_dist
+for i in range(1,k):
+	j = numpy.argmin(landmark_dists[rho_indices[i],rho_indices[0:i]])
+	delta[rho_indices[i]] = landmark_dists[rho_indices[i],rho_indices[j]]
 
-for i in range(0,n):
-	mindist = numpy.linalg.norm(centers[0]-lowdimproj[i])
-	for j in range(0,centers.shape[0]):
-		dist = numpy.linalg.norm(centers[j]-lowdimproj[i])
-		if dist < mindist:
-			mindist = dist
-			calculated_labels[i] = j
+indices = numpy.argsort(delta)[::-1]
+
+l=numpy.zeros(k) - 1
+for i in range(0,num_centers):
+	l[indices[i]] = i
+
+for i in range(1,k):
+	if (l[rho_indices[i]] == -1):
+		j = numpy.argmin(landmark_dists[rho_indices[i],rho_indices[0:i]])
+		l[rho_indices[i]] = l[rho_indices[j]]
+
+print(l.shape)
+
+calculated_labels=numpy.dot(l*2-1, Ctransp)
+
+
 
 
 landmarks = input[Lambda,:]
@@ -177,8 +179,13 @@ ax.set_title("projection to one singular value")
 ax.scatter(proj[:,0], numpy.zeros_like(proj[:,0]), color=colors[input_labels].tolist())
 
 ax = fig.add_subplot(2,4,7)
+ax.set_title("calculated labels on landmarks")
+ax.scatter(landmarks[:,0], landmarks[:,1], color=colors[::-1][l.astype(int)].tolist())
+
+ax = fig.add_subplot(2,4,8)
 ax.set_title("calculated labels on data")
-ax.scatter(input[:,0], input[:,1], color=colors[::-1][calculated_labels.astype(int)].tolist())
+rgb =  plt.get_cmap('jet')((calculated_labels[:] - calculated_labels[:].min(0)) / calculated_labels[:].ptp(0))
+ax.scatter(input[:,0], input[:,1], color=rgb)
 
 
 plt.show()
