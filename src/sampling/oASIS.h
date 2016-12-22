@@ -22,7 +22,23 @@ public:
     uint64_t k(void) const {
         return k_;
     }
+
+    const MatrixType &W(void) const  {
+        return W_;
+    }
+    const MatrixType &U(void) const {
+        return U_;
+    }
+    RowMatrixType Ctransp(void) const {
+        return Ctransp_max_.topRows(k_);
+    }
+
+    const std::vector<uint64_t> &Lambda(void) const {
+        return Lambda_;
+    }
+
 private:
+    MatrixType W_;
     MatrixType Winv_max_;
     RowMatrixType Ctransp_max_;
     uint64_t k_;

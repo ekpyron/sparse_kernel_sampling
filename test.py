@@ -14,7 +14,7 @@ input, input_labels = sklearn.datasets.make_circles(1000,factor=0.3,noise=0.05)
 
 sigma_factor = 0.25
 initial_columns = 1
-max_columns = 25
+max_columns = 100
 tolerance = 0.0001
 
 target_dimensions = 1

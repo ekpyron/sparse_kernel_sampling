@@ -78,13 +78,17 @@ TwoMoons<float_type>::TwoMoons(void) {
             if (d > max_dist) max_dist = d;
         }
     }
-    float_type two_sigma_squared = float_type(0.25) * max_dist;
+    float_type two_sigma_squared = float_type(0.05*0.05) * max_dist;
     for (auto i = 0; i < data.size(); i++) {
         for (auto j = 0; j < data.size(); j++) {
             float dist = (data[i] - data[j]).squaredNorm();
             G_(i,j) = my_exp(-dist / two_sigma_squared);
         }
     }
+/*
+    MatrixType H = (float_type(1) / float_type(data.size())) * MatrixType::Ones(data.size(),data.size());
+    G_ = G_-H*G_-G_*H+H*G_*H;
+*/
     if (verbose) std::cout << "  DONE." << std::endl;
 }
 

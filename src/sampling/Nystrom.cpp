@@ -186,5 +186,5 @@ template class Nystrom<float>;
 template class Nystrom<double>;
 template class Nystrom<long double>;
 #ifdef USE_MPFR
-//template class Nystrom<mpfr::mpreal>;
+template class Nystrom<mpfr::mpreal>;
 #endif

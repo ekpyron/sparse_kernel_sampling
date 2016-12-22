@@ -1,0 +1,3 @@
+set(SPARSE_KERNEL_SAMPLING_MDS_SOURCES MDS.cpp MDS.hpp)
+
+add_library(sparse_kernel_sampling_mds STATIC ${SPARSE_KERNEL_SAMPLING_MDS_SOURCES})

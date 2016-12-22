@@ -7,16 +7,17 @@
 
 class RuntimeMonitor {
 public:
-    RuntimeMonitor(void) : time (0.0) {
+    RuntimeMonitor(void) : time_ (0.0) {
     }
     ~RuntimeMonitor(void) {
     }
     const std::chrono::duration<double> &get(void) const {
-        return time;
+        return time_;
     }
 private:
     friend class RuntimeMonitorScope;
-    std::chrono::duration<double> time;
+    friend class RuntimeMonitorScopeSuspend;
+    std::chrono::duration<double> time_;
 };
 
 class RuntimeMonitorScope {
@@ -29,7 +30,7 @@ public:
 private:
     std::string name_;
     RuntimeMonitor &monitor_;
-    std::chrono::time_point<std::chrono::steady_clock> start_time;
+    std::chrono::time_point<std::chrono::steady_clock> start_time_;
 
     template<typename... Args>
     static std::string ArgsToString(Args... args) {
@@ -44,6 +45,16 @@ private:
     }
     static void ArgsToStream(std::stringstream &stream) {
     }
+    friend class RuntimeMonitorScopeSuspend;
+};
+
+class RuntimeMonitorScopeSuspend {
+public:
+    RuntimeMonitorScopeSuspend (RuntimeMonitorScope &scope);
+    ~RuntimeMonitorScopeSuspend();
+private:
+    std::chrono::time_point<std::chrono::steady_clock> start_time_;
+    RuntimeMonitorScope &scope_;
 };
 
 

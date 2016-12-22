@@ -15,8 +15,8 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
     : runtime_(runtime)
 {
     const uint64_t init_cols = 10;
-    const uint64_t max_cols = 200;
-    const float_type err_tolerance = std::numeric_limits<float>::epsilon();
+    const uint64_t max_cols = 1000;
+    const float_type err_tolerance = 1e-3;//std::numeric_limits<float>::epsilon();
     {
         RuntimeMonitorScope scope(*runtime_, "Memory allocation");
         Winv_max_ = MatrixType (max_cols, max_cols);
@@ -82,6 +82,11 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
                 }
                 if (err <= err_tolerance) break;
 
+                if (Arguments::get().verbose() && !(k_&0x1F)) {
+                    RuntimeMonitorScopeSuspend suspend (runtimeScope);
+                    std::cout << "    [k: " << k_ << " err: " << err << "]" << std::endl;
+                }
+
                 float s = float_type(1.0) / Delta(i);
 
                 const RowVectorType &q = R.col(i);
@@ -110,18 +115,21 @@ oASIS<float_type>::oASIS(const Data<float_type> *data, const std::shared_ptr<Run
 
     {
         auto const& Ctransp = Ctransp_max_.topRows (k_);
-        MatrixType W;
         {
             RuntimeMonitorScope scope (*runtime_, "Fetch W");
-            W = MatrixType (k_, k_);
+            W_ = MatrixType (k_, k_);
             uint64_t i = 0;
             for (auto it = Lambda_.begin (); it != Lambda_.end(); it++) {
-                W.row(i) = Ctransp.col(*it);
+                W_.row(i) = Ctransp.col(*it);
                 i++;
             }
         }
 
-        Nystrom<float_type>::ScaleSVD(Sigma_, U_, W, Ctransp, nitems, runtime_);
+        Nystrom<float_type>::ScaleSVD(Sigma_, U_, W_, Ctransp, nitems, runtime_);
+
+        std::cout << "Sigma_(" << Sigma_.rows() << ", " << Sigma_.cols() << ")" << std::endl;
+        std::cout << "U_(" << U_.rows() << ", " << U_.cols() << ")" << std::endl;
+        std::cout << Sigma_ << std::endl;
     }
 }
 
@@ -143,5 +151,5 @@ template class oASIS<float>;
 template class oASIS<double>;
 template class oASIS<long double>;
 #ifdef USE_MPFR
-//template class oASIS<mpfr::mpreal>;
+template class oASIS<mpfr::mpreal>;
 #endif
